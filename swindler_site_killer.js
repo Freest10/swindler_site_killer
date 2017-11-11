@@ -70,24 +70,15 @@ let startKill = async () => {
         siteInst.setBrowser(browser);
         siteInst.setUsers(users);
         siteInst.setPrefixNum(prefixNum);
-        await resolveAndStartSendForm(siteInst, link);
-    }
-
-    function resolveAndStartSendForm(siteInst, link) {
-        return new Promise(resolve => {
-            setTimeout(() => {
-                siteInst.setPath(link);
-                siteInst.startSendForms();
-                resolve(true);
-            }, 4000);
-        });
+        siteInst.setPath(link);
+        await siteInst.resolveAndStartSendForm();
     }
 
     browser.close();
     setTimeout(()=>{
         startKill();
     }, timerTime)
-    return links;
+
 };
 
 startKill();
@@ -172,19 +163,23 @@ Site.prototype.setPath = function(path) {
     this.path = path;
 }
 
+Site.prototype.resolveAndStartSendForm = function(){
+    return new Promise(resolve => {
+        setTimeout(() => {
+            this.startSendForms();
+            resolve(true);
+        }, 4000);
+    });
+}
+
 Site.prototype.startSendForms = async function() {
     this.page = await this.browser.newPage();
     await this.page.goto((this.path));
     await this.page.waitFor(1000);
-    this.findForms();
+    this.findAndSendForms();
 }
 
-Site.prototype.findForms = async function(){
-
-    const formsCounts = await this.page.$$eval('form', forms => forms.length);
-
-    await this.page.$$eval('form', forms => forms.length);
-
+Site.prototype.findAndSendForms = async function(){
 
     await this.page.evaluate(async () => {
         await window.scrollTo(0, document.body.scrollHeight);
@@ -224,21 +219,6 @@ Site.prototype.findForms = async function(){
     setTimeout(()=> {
         this.sendCallBakcForm();
     }, 2000);
-}
-
-Site.prototype.sendForm = async function(formNum){
-    let xPath = 'form:nth-child('+formNum+')';
-    let formButton = await this.page.$(xPath);
-
-    if(formButton){
-        await this.page.$eval(xPath, function(elem) {
-            if(elem){
-                let element = elem.querySelector("button.submit");
-                if(element) element.click();
-            }
-            return elem;
-        }).then(function(elem) {});
-    }
 }
 
 Site.prototype.sendCallBakcForm = async function(formNum){
